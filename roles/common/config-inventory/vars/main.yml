@@ -1,1 +1,1 @@
-overcloud_ssh_config: ~/.quickstart/ssh.config.ansible
+overcloud_ssh_config: /root/.quickstart/ssh.config.ansible
