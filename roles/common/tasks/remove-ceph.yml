@@ -1,0 +1,4 @@
+- name: Workaround RHBZ#1461491 - remove ceph package
+  yum:
+    name: ceph
+    state: removed

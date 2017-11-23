@@ -1,0 +1,8 @@
+canary_mine_network_cidr: 192.168.49.0/24
+canary_cage_network_cidr: 192.168.50.0/24
+canary_public_network_provider_physical_network: datacentre
+canary_public_network_provider_network_type: flat
+canary_public_network_cidr: 192.168.24.0/24
+canary_public_network_gateway_ip: 192.168.24.1
+canary_floatingip_allocation_pool_start: 192.168.24.100
+canary_floatingip_allocation_pool_end: 192.168.24.110

@@ -1,0 +1,1 @@
+overcloud_ssh_config: ~/.quickstart/ssh.config.ansible

@@ -1,0 +1,3 @@
+---
+- name: openstack-sahara - db sync
+  command: sahara-db-manage --config-file /etc/sahara/sahara.conf upgrade head

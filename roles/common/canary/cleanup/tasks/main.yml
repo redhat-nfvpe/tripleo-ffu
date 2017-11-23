@@ -1,0 +1,62 @@
+- include: ../../../common/tasks/overcloudrc.yml
+
+- name: Cleaning up instances
+  os_server:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: absent
+    name: '{{ item }}'
+  with_items:
+    - test-mine-canary
+    - test-cage-canary
+
+- name: Cleaning up image
+  os_image:
+    auth: "{{ creds.stdout | from_yaml }}" 
+    state: absent
+    name: rhel
+
+- name: Cleaning up flavor
+  os_nova_flavor:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: absent
+    name: test
+
+- name: Cleaning up key
+  os_keypair:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: absent
+    name: user_key
+
+- name: Cleaning up security group
+  os_security_group:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: absent
+    name: canary
+
+# FIXME: currently broken with L3 HA enabled routers
+# https://review.openstack.org/#/c/482153/
+#- name: Cleaning up router
+#  os_router:
+#    auth: "{{ creds.stdout | from_yaml }}"
+#    state: absent
+#    name: floating
+
+- name: Cleaning up subnets
+  os_subnet:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: absent
+    name: '{{ item }}'
+  with_items:
+    - cage
+    - mine
+    - public
+
+- name: Cleaning up networks
+  os_network:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: absent
+    name: '{{ item }}'
+  with_items:
+    - cage
+    - mine
+    - public

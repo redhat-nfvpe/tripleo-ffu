@@ -1,0 +1,8 @@
+[undercloud-node]
+undercloud
+
+[overcloud-controllers]
+overcloud-controller-0 
+
+[overcloud-computes]
+overcloud-novacompute-0

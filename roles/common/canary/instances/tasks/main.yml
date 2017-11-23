@@ -1,0 +1,113 @@
+- include: ../../../common/tasks/overcloudrc.yml
+
+- name: Check if RHEL image is present
+  stat:
+    path: /home/stack/rhel.img
+  register: rhel_image
+
+- name: Download RHEL image
+  get_url:
+    url: http://download.eng.brq.redhat.com/brewroot/packages/rhel-guest-image/7.3/36/images/rhel-guest-image-7.3-36.x86_64.qcow2
+    dest: /home/stack/rhel.img
+  when: rhel_image.stat.exists == False
+
+- name: Upload RHEL image to Glance
+  os_image:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: rhel
+    disk_format: qcow2
+    container_format: bare
+    filename: /home/stack/rhel.img
+
+- name: Create security group
+  os_security_group:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: canary
+
+- name: Add SSH access to security group
+  os_security_group_rule:
+    auth: "{{ creds.stdout | from_yaml }}"
+    security_group: canary
+    protocol: tcp
+    port_range_min: 22
+    port_range_max: 22
+
+- name: Add ICMP access to security group
+  os_security_group_rule:
+    auth: "{{ creds.stdout | from_yaml }}"
+    security_group: canary
+    protocol: icmp
+
+- name: Upload ~/.ssh/id_rsa.pub public key to undercloud
+  copy:
+    src: ~/.ssh/id_rsa.pub
+    dest: /tmp/user.pub
+
+- name: Add public key
+  os_keypair:
+    auth: "{{ creds.stdout | from_yaml }}"
+    name: user_key
+    state: present
+    public_key_file: /tmp/user.pub
+
+- name: Add flavor for test instances
+  os_nova_flavor:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: test
+    ram: 1024
+    disk: 10
+    vcpus: 2
+
+- name: Launch test instance on mine network
+  os_server:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: test-mine-canary
+    key_name: user_key
+    flavor: test
+    image: rhel
+    security_groups:
+      - canary
+    nics:
+      - net-name: mine
+  register: test_mine_canary_ret
+
+- name: Launch test instance on cage network
+  os_server:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: test-cage-canary
+    key_name: user_key
+    flavor: test
+    image: rhel
+    security_groups:
+      - canary
+    nics:
+      - net-name: cage
+  register: test_cage_canary_ret
+
+- name: Add test instances to hosts inventory
+  add_host:
+    name: "{{ item.key }}"
+    group: test_instances
+    ansible_user: cloud-user
+    ansible_host: "{{ item.value }}"
+  with_dict:
+    "test_cage_canary": "{{ test_cage_canary_ret.server['public_v4'] }}"
+    "test_mine_canary": "{{ test_mine_canary_ret.server['public_v4'] }}"
+  when: canary_public_network_access == 'direct'
+
+- name: Add test instances to hosts inventory via undercloud
+  add_host:
+    name: "{{ item.key }}"
+    group: test_instances
+    ansible_user: cloud-user
+    ansible_host: "{{ item.value }}"
+    ansible_ssh_common_args: "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ProxyCommand='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -F {{ overcloud_ssh_config }} undercloud -W {{ item.value }}:22'"
+  with_dict:
+    "test_cage_canary": "{{ test_cage_canary_ret.server['public_v4'] }}"
+    "test_mine_canary": "{{ test_mine_canary_ret.server['public_v4'] }}"
+  when: canary_public_network_access == 'undercloud'

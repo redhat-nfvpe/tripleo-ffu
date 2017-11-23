@@ -1,0 +1,32 @@
+- name: Launch async L2 network against the default gateway
+  shell: "ping -D -O -q '{{ hostvars[inventory_hostname].ansible_default_ipv4['gateway'] }}' > /tmp/l2_async_job.log 2>&1"
+  async: 1000000
+  poll: 0
+  register: l2_async_job
+
+- name: Launch async internal L3 network test from mine
+  delegate_to: test_mine_canary
+  shell: "ping -D -O -q '{{ hostvars['test_cage_canary'].ansible_host }}' > /tmp/l3_internal_async_job.log 2>&1"
+  async: 1000000
+  poll: 0
+  register: l3_internal_async_job
+
+- name: Launch async internal L3 network test from cage
+  delegate_to: test_cage_canary
+  shell: "ping -D -O -q '{{ hostvars['test_mine_canary'].ansible_host }}' > /tmp/l3_internal_async_job.log 2>&1"
+  async: 1000000
+  poll: 0
+  register: l3_internal_async_job
+
+- name: Launch async external L3 network test against 8.8.8.8
+  shell: "ping -D -O -q '{{ canary_l3_external_async_job_target }}' > /tmp/l3_external_async_job.log 2>&1"
+  async: 1000000
+  poll: 0
+  register: l3_external_async_job
+
+- name: Register async jobs
+  set_fact:
+    async_jobs:
+        l2_async_job: "{{ l2_async_job }}"
+        l3_internal_async_job: "{{ l3_internal_async_job }}"
+        l3_external_async_job: "{{ l3_external_async_job }}"

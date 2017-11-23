@@ -1,0 +1,24 @@
+- name: Report any jobs that have stopped early
+  debug:
+    msg: '"{{ item.key }}" stopped.'
+  when: item.value['finished'] == 1
+  with_dict: "{{ async_jobs }}"
+
+- name: Gracefully kill all test processes
+  shell: "{{ item }}"
+  with_items:
+    - 'pkill --signal SIGQUIT ping'
+
+- name: Fetch all job logs
+  slurp:
+    src: '/tmp/{{ item.key }}.log'
+  register: job_logs
+  with_dict: "{{ async_jobs }}"
+
+- name: print results
+  debug:
+    var: results
+
+- name: Print all jobs logs
+  debug: msg="{{ item['content'] | b64decode }}"
+  with_items: "{{ job_logs['results'] }}"

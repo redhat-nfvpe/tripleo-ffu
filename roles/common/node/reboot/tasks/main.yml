@@ -1,0 +1,17 @@
+- name: Rebooting {{ inventory_hostname }}.
+  shell: sleep 2 && reboot
+  async: 1
+  poll: 0
+
+- name: Waiting for reboot to start
+  pause:
+    seconds: 30
+
+- name: Waiting for node to become accessiable
+  local_action: shell ssh -F {{ overcloud_ssh_config }} {{ inventory_hostname }} exit
+  become: false
+  register: result
+  ignore_errors: true
+  until: result.rc == 0
+  retries: 60
+  delay: 10

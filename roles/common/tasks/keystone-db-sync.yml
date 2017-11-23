@@ -1,0 +1,2 @@
+- name: openstack-keystone - db sync
+  command: keystone-manage db_sync

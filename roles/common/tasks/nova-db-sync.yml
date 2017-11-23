@@ -1,0 +1,8 @@
+- name: openstack-nova - api db sync
+  command: nova-manage api_db sync
+
+- name: openstack-nova - db sync
+  command: nova-manage db sync
+
+- name: openstack-nova - online_data_migrations
+  command: nova-manage db online_data_migrations

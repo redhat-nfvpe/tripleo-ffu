@@ -1,0 +1,2 @@
+- name: Move cluster into maintenance mode.
+  command: pcs property set maintenance-mode=true

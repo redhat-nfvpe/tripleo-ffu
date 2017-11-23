@@ -1,0 +1,109 @@
+- name: openstack-nova - install openstack-nova-placement-api
+  yum:
+    name: openstack-nova-placement-api
+    state: latest
+
+- name: openstack-nova - mkdir /var/www/cgi-bin/nova
+  file:
+    path: /var/www/cgi-bin/nova
+    state: directory
+    owner: nova
+    group: nova
+
+- name: openstack-nova - cp /usr/bin/nova-placement-api /var/www/cgi-bin/nova/nova-placement-api
+  copy:
+    remote_src: true
+    src: /usr/bin/nova-placement-api
+    dest: /var/www/cgi-bin/nova/nova-placement-api
+    owner: nova
+    group: nova
+
+- name: openstack-nova - blank /etc/httpd/conf.d/00-nova-placement-api.conf
+  copy:
+    content: ""
+    dest: /etc/httpd/conf.d/00-nova-placement-api.conf
+    group: nova
+    owner: nova
+
+- name: openstack-nova - find placement binding address
+  shell: grep 5000 /etc/httpd/conf/ports.conf | awk '{ print $2 }' | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
+  register: placement_binding_addr
+
+- name: openstack-nova - update ports.conf
+  lineinfile:
+    path: /etc/httpd/conf/ports.conf
+    line: 'Listen {{placement_binding_addr.stdout}}:8778'
+
+- name: openstack-nova - create /etc/httpd/conf.d/10-placement_wsgi.conf
+  copy:
+    dest: /etc/httpd/conf.d/10-placement_wsgi.conf
+    content: |
+      <VirtualHost 0.0.0.0:8778>
+        ServerName allinone.example.com
+
+        ## Vhost docroot
+        DocumentRoot "/var/www/cgi-bin/nova"
+
+        ## Directories, there should at least be a declaration for /var/www/cgi-bin/nova
+
+        <Directory "/var/www/cgi-bin/nova">
+          Options Indexes FollowSymLinks MultiViews
+          AllowOverride None
+          Require all granted
+        </Directory>
+
+        ## Logging
+        ErrorLog "/var/log/httpd/placement_wsgi_error.log"
+        ServerSignature Off
+        CustomLog "/var/log/httpd/placement_wsgi_access.log" combined
+        SetEnvIf X-Forwarded-Proto https HTTPS=1
+        WSGIApplicationGroup %{GLOBAL}
+        WSGIDaemonProcess placement-api display-name=placement_wsgi group=nova processes=4 threads=2 user=nova
+        WSGIProcessGroup placement-api
+        WSGIScriptAlias /placement "/var/www/cgi-bin/nova/nova-placement-api"
+      </VirtualHost>
+
+# FIXME - use os_* modules once we can create endpoints
+# FIXME - source creds from the undercloud node?
+- name: openstack-nova - start httpd
+  systemd:
+    name: httpd
+    state: started
+
+- name: openstack-nova - create placement user from undercloud
+  shell: . ~/overcloudrc ; openstack user create --password redhat placement
+
+- name: openstack-nova - add admin role to user from undercloud
+  shell: . ~/overcloudrc ; openstack role add --project service --user placement admin
+
+- name: openstack-nova - create placement service from undercloud
+  shell: . ~/overcloudrc ; openstack service create placement --name placement
+
+- name: openstack-nova - create placement endpoint from undercloud
+  shell: . ~/overcloudrc ; openstack endpoint create placement --publicurl http://{{placement_binding_addr.stdout}}:8778/placement --adminurl http://{{placement_binding_addr.stdout}}:8778/placement --internalurl http://{{placement_binding_addr.stdout}}:8778/placement --region regionOne
+
+- name: openstack-nova - stop httpd
+  systemd:
+    name: httpd
+    state: stopped
+
+- name: openstack-nova - find auth_url
+  command: crudini --get /etc/nova/nova.conf neutron auth_url
+  register: auth_url
+
+- name: openstack-nova - update nova.conf with placement settings
+  blockinfile:
+    path: /etc/nova/nova.conf
+    owner: nova
+    group: nova
+    block: |
+      [placement]
+      os_region_name=regionOne
+      auth_type=password
+      auth_url={{ auth_url.stdout }}
+      project_name=service
+      project_domain_name=Default
+      username=placement
+      user_domain_name=Default
+      password=redhat
+

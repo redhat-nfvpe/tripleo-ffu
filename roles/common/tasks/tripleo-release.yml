@@ -1,0 +1,13 @@
+- name: tripleo-release - git clone tripleo-repos
+  git:
+    repo: https://github.com/openstack/tripleo-repos.git
+    dest: /home/stack/
+    clone: yes
+    update: yes
+
+- name: tripleo-release - install from source
+  command: python setup.py install
+  chdir: /home/stack/tripleo-repos
+
+- name: tripleo-release - enable {{ release_version }}
+  command: tripleo-repos -b {{ release_version }} current

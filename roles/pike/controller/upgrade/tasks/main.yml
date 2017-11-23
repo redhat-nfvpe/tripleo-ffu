@@ -1,0 +1,29 @@
+- name: Backup DB
+  mysql_db:
+    state: dump
+    name: all
+    target: /root/backup_pike.sql
+
+- name: tripleo repo
+  include_role:
+    name: common
+    tasks_from: tripleo-release
+  vars:
+    release_version: pike
+
+- name: Update packages
+  yum:
+    name: '*'
+    state: latest
+
+- include: ../../../common/tasks/keystone-db-sync.yml
+- include: ../../../common/tasks/cinder-db-sync.yml
+- include: ../../../common/tasks/neutron-db-sync.yml
+- include: ../../../common/tasks/sahara-db-sync.yml
+- include: ../../../common/tasks/heat-db-sync.yml
+- include: ../../../common/tasks/nova-db-sync.yml
+
+# FIXME: RHBZ#
+#- name: openstack-ceilometer - db sync
+#  command: ceilometer-upgrade --skip-metering-database
+

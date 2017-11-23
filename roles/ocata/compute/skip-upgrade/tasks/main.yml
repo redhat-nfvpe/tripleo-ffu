@@ -1,0 +1,39 @@
+- name: rhos-release
+  include_role:
+    name: common
+    tasks_from: rhos-release
+  vars:
+    rhos_release_osp: 11
+    rhos_release_rhel: 7.4
+    rhos_release_puddle: 7.4-testing
+
+- name: Upgrade to OSP 11
+  yum:
+    name: '*'
+    state: latest
+
+- name: openstack-nova - find auth_url
+  command: crudini --get /etc/nova/nova.conf neutron auth_url
+  register: auth_url
+
+- name: openstack-nova - update nova.conf with placement settings
+  blockinfile:
+    path: /etc/nova/nova.conf
+    owner: nova
+    group: nova
+    block: |
+      [placement]
+      os_region_name=regionOne
+      auth_type=password
+      auth_url={{ auth_url.stdout }}
+      project_name=service
+      project_domain_name=Default
+      username=placement
+      user_domain_name=Default
+      password=redhat
+
+- name: restart OpenStack compute services on {{ inventory_hostname }}.
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  with_items: "{{ compute_openstack_services }}"

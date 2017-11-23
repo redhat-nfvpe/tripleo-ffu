@@ -1,0 +1,72 @@
+- include: ../../../common/tasks/overcloudrc.yml
+
+- name: Create mine tenant network
+  os_network:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: mine
+
+- name: Create mine tenant network subnet
+  os_subnet:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    network_name: mine
+    name: mine
+    cidr: "{{ canary_mine_network_cidr }}"
+
+- name: Create cage private tenant network
+  os_network:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: cage
+
+- name: Create cage private tenant network subnet
+  os_subnet:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    network_name: cage
+    name: cage
+    cidr: "{{ canary_cage_network_cidr }}"
+
+- name: Create flat public network
+  os_network:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: public
+    external: true
+    provider_network_type: "{{ canary_public_network_provider_network_type }}"
+    provider_physical_network: "{{ canary_public_network_provider_physical_network }}"
+  when: canary_public_network_provider_network_type == 'flat'
+
+- name: Create vlan public network
+  os_network:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: public
+    external: true
+    provider_network_type: "{{ canary_public_network_provider_network_type }}"
+    provider_physical_network: "{{ canary_public_network_provider_physical_network }}"
+    provider_segmentation_id: "{{ canary_public_network_provider_segmentation_id }}"
+  when: canary_public_network_provider_network_type == 'vlan'
+
+- name: Create public network subnet
+  os_subnet:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: public
+    network_name: public
+    enable_dhcp: false
+    allocation_pool_start: "{{ canary_floatingip_allocation_pool_start }}"
+    allocation_pool_end: "{{ canary_floatingip_allocation_pool_end }}"
+    gateway_ip: "{{ canary_public_network_gateway_ip }}"
+    cidr: "{{ canary_public_network_cidr }}"
+
+- name: Create router with public gateway
+  os_router:
+    auth: "{{ creds.stdout | from_yaml }}"
+    state: present
+    name: floating
+    network: public
+    interfaces:
+      - mine
+      - cage

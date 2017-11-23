@@ -1,0 +1,6 @@
+# FIXME: single shot systemctl call?
+- name: Start all OpenStack services on {{ inventory_hostname }}.
+  systemd:
+    name: "{{ item }}"
+    state: started
+  with_items: "{{ controller_openstack_services }}"

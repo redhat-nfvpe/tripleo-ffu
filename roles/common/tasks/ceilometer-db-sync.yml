@@ -1,0 +1,2 @@
+- name: openstack-ceilometer - db sync
+  command: ceilometer-dbsync --config-file=/etc/ceilometer/ceilometer.conf

@@ -1,0 +1,20 @@
+- name: rhos-release
+  include_role:
+    name: common
+    tasks_from: rhos-release
+  vars:
+    rhos_release_osp: 11
+    rhos_release_rhel: 7.4
+    rhos_release_puddle: 7.4-testing
+
+- name: Update packages
+  yum:
+    name: '*'
+    state: latest
+
+# FIXME: single shot systemctl call?
+- name: Stop all OpenStack services on {{ inventory_hostname }}.
+  systemd:
+    name: "{{ item }}"
+    state: started
+  with_items: "{{ controller_skip_openstack_services }}"

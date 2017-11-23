@@ -1,0 +1,8 @@
+- name: Enable {{ inventory_hostname }} in cluster.
+  pacemaker_cluster:
+    node: "{{ inventory_hostname }}"
+    state: online
+
+- name: Allow cluster to rebalance before continuing
+  pause:
+    minutes: 2

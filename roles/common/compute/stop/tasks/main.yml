@@ -1,0 +1,5 @@
+- name: Stop all OpenStack services on {{ inventory_hostname }}.
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+  with_items: "{{ compute_openstack_services }}"

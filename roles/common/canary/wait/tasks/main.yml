@@ -1,0 +1,13 @@
+- name: Waiting for test instances to return
+  wait_for_connection:
+  when: canary_public_network_access == 'direct'
+
+- name: Waiting for test instances to return via undercloud
+  local_action: shell ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ProxyCommand=' ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -F {{ overcloud_ssh_config }} undercloud -W {{ hostvars[inventory_hostname].ansible_host }}:22' {{ hostvars[inventory_hostname].ansible_user }}@{{ hostvars[inventory_hostname].ansible_host }} exit
+  become: false
+  register: result
+  ignore_errors: true
+  until: result.rc == 0
+  retries: 60
+  delay: 10
+  when: canary_public_network_access == 'undercloud'

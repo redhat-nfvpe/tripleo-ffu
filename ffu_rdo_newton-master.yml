@@ -1,0 +1,30 @@
+---
+- name: Configure inventory
+  hosts: all
+  gather_facts: no
+  roles:
+    - common/config-inventory
+
+#- name: Rolling upgrade of all controllers to RHEL 7.4
+#  hosts: overcloud-controllers
+#  serial: 1
+#  become: true
+#  roles:
+#    - common/controller/disable
+#    - 9/controller/update
+#    - common/node/reboot
+#    - common/controller/enable
+
+- name: Move the cluster into maintenance mode and stop all OpenStack services
+  hosts: overcloud-controllers
+  become: true
+  roles:
+    - common/controller/stop
+
+- name: Upgrade controller0 to ocata, pike, master and then start all OpenStack services
+  hosts: overcloud-controllers[0]
+  become: true
+  roles:
+    - ocata/controller/upgrade
+    - pike/controller/upgrade
+    - common/controller/start

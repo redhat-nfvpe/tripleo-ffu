@@ -1,0 +1,4 @@
+- name: Use ssh config '{{ overcloud_ssh_config }}'
+  set_fact:
+    ansible_ssh_common_args: "-F '{{ overcloud_ssh_config }}'"
+  when: overcloud_ssh_config != ''

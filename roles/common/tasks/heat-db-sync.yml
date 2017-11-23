@@ -1,0 +1,2 @@
+- name: openstack-heat - db sync
+  command: heat-manage --config-file /etc/heat/heat.conf db_sync

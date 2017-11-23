@@ -1,0 +1,76 @@
+- name: openstack-nova - Fetch rabbit_userid
+  command: crudini --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_userid
+  register: rabbit_userid
+
+- name: openstack-nova - Fetch rabbit_password
+  command: crudini --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_password
+  no_log: true
+  register: rabbit_password
+
+- name: openstack-nova - Fetch rabbit_hosts
+  command: crudini --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_hosts
+  register: rabbit_hosts
+
+- name: openstack-nova - Fetch rabbit_virtual_host
+  command: crudini --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_virtual_host
+  register: rabbit_virtual_host
+
+- name: openstack-nova - create transport_url
+  no_log: true
+  set_fact:
+    transport_url: "rabbit://{% for host in rabbit_hosts.stdout.split(',') %}{{rabbit_userid.stdout}}:{{rabbit_password.stdout}}@{{host}}{{ '' if loop.last else ',' }}{% endfor %}{{rabbit_virtual_host.stdout}}"
+
+- name: openstack-nova - Set transport_url
+  ini_file:
+    path: /etc/nova/nova.conf
+    section: DEFAULT
+    option: transport_url
+    owner: nova
+    group: nova
+    value: "{{ transport_url }}"
+
+- name: openstack-nova - Fetch DB connection string
+  command: crudini --get /etc/nova/nova.conf database connection
+  no_log: true
+  register: db_connection
+
+- name: openstack-nova - create cell0 db
+  mysql_db:
+    name: nova_cell0
+    state: present
+
+- name: openstack-nova - grant access to cell0 db
+  mysql_user:
+    name: nova
+    host_all: yes
+    state: present
+    priv: '*.*:ALL'
+
+- name: fetch overcloudrc from the undercloud
+  slurp:
+    src: /home/stack/overcloudrc
+  delegate_to: undercloud
+  register: overcloudrc
+
+- name: write overcloudrc to controller0
+  copy:
+    content: "{{ overcloudrc.content | b64decode }}"
+    dest: ~/overcloudrc
+
+- name: openstack-nova - map cell0
+  command: nova-manage cell_v2 map_cell0 --database_connection="{{ db_connection.stdout | regex_replace('nova$', 'nova_cell0') }}"
+
+- name: openstack-nova - create default cell
+  command: nova-manage cell_v2 create_cell --name='default' --database_connection={{ db_connection.stdout }} --transport-url={{ transport_url }}
+  # FIXME: Find a better way of ignoring errors if this has already been created
+  ignore_errors: yes
+
+- name: openstack-nova - get default cell uuid
+  shell: nova-manage cell_v2 list_cells | sed -e '1,3d' -e '$d' | awk -F ' *| *' '$2 == "default" {print $4}'
+  register: nova_api_cell_uuid
+
+- name: openstack-nova - discover hosts
+  command: nova-manage cell_v2 discover_hosts --cell_uuid {{ nova_api_cell_uuid.stdout }}
+
+- name: openstack-nova - map instances to cells
+  command: nova-manage cell_v2 map_instances --cell_uuid {{ nova_api_cell_uuid.stdout }}
