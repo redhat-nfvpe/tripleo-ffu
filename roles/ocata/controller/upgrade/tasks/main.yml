@@ -2,7 +2,7 @@
   mysql_db:
     state: dump
     name: all
-    target: /root/backup_ocata.sql
+    target: /root/backup_newton.sql
 
 - name: tripleo repo
   include_role:

@@ -27,4 +27,5 @@
   roles:
     - ocata/controller/upgrade
     - pike/controller/upgrade
+    - master/controller/upgrade
     - common/controller/start

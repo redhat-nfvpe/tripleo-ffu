@@ -2,14 +2,14 @@
   mysql_db:
     state: dump
     name: all
-    target: /root/backup_ocata.sql
+    target: /root/backup_pike.sql
 
 - name: tripleo repo
   include_role:
     name: common
     tasks_from: tripleo-release
   vars:
-    release_version: pike
+    release_version: master
 
 - name: Update packages
   yum:
