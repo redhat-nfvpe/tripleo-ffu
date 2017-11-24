@@ -1,0 +1,55 @@
+- name: Backup previous yum.repos.d to restore after package upgrade
+  archive:
+    path: /etc/yum.repos.d
+    dest: /tmp/backup_yum_repos.tgz
+  become: true
+
+- name: Register previous ovs version
+  shell: rpm -q openvswitch|tail -n 1
+  ignore_errors: true
+  register: previous_ovs_version
+
+- name: tripleo repo
+  include_role:
+    name: common
+    tasks_from: tripleo-release
+  vars:
+    release_version: master
+
+- name: Update ovs and kernel packages
+  yum:
+    name: "{{ item }}"
+    state: latest
+  become: true
+  with_items:
+    - openvswitch
+    - kernel
+
+- name: Restore previous yum.repos.d
+  unarchive:
+    src: /tmp/backup_yum_repos.tgz
+    dest: /etc/
+    remote_src: true
+  become: true
+
+- name: Check for kernel difference
+  shell: if [ $(rpm -q kernel|tail -n 1) != kernel-$(uname -r) ]; then echo 'reboot'; else echo 'no'; fi
+  ignore_errors: true
+  register: reboot_hint
+
+- name: Register current ovs version
+  shell: rpm -q openvswitch|tail -n 1
+  ignore_errors: true
+  register: current_ovs_version
+
+- name: Include vars for reboot
+  include_vars: roles/common/config-inventory/vars/main.yml
+  when: reboot_hint.stdout.find("reboot") != -1 or current_ovs_version.stdout != previous_ovs_version.stdout
+
+- name: Rebooting when kernel or ovs version changed
+  include_role:
+    name: common/node/reboot
+    tasks_from: main
+  become: true
+  when: reboot_hint.stdout.find("reboot") != -1 or current_ovs_version.stdout != previous_ovs_version.stdout
+

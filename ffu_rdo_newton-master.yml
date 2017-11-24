@@ -5,15 +5,23 @@
   roles:
     - common/config-inventory
 
-#- name: Rolling upgrade of all controllers to RHEL 7.4
-#  hosts: overcloud-controllers
-#  serial: 1
-#  become: true
-#  roles:
-#    - common/controller/disable
-#    - 9/controller/update
-#    - common/node/reboot
-#    - common/controller/enable
+- name: Rolling upgrade of all controllers to RHEL 7.4 and latest OVS
+  hosts: overcloud-controllers
+  serial: 1
+  become: true
+  tags: minor_update_controllers
+  roles:
+    - common/controller/disable
+    - common/node/update
+    - common/controller/enable
+
+- name: Rolling upgrade of all computes to RHEL 7.4 and latest OVS
+  hosts: overcloud-computes
+  serial: 1
+  become: true
+  tags: minor_update_computes
+  roles:
+    - common/node/update
 
 - name: Move the cluster into maintenance mode and stop all OpenStack services
   hosts: overcloud-controllers
