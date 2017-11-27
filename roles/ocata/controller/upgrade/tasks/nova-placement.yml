@@ -79,8 +79,14 @@
 - name: openstack-nova - create placement service from undercloud
   shell: . ~/overcloudrc ; openstack service create placement --name placement
 
-- name: openstack-nova - create placement endpoint from undercloud
-  shell: . ~/overcloudrc ; openstack endpoint create placement --publicurl http://{{placement_binding_addr.stdout}}:8778/placement --adminurl http://{{placement_binding_addr.stdout}}:8778/placement --internalurl http://{{placement_binding_addr.stdout}}:8778/placement --region regionOne
+- name: openstack-nova - create placement public endpoint from undercloud
+  shell: . ~/overcloudrc ; openstack endpoint create placement public http://{{placement_binding_addr.stdout}}:8778/placement --region regionOne
+
+- name: openstack-nova - create placement admin endpoint from undercloud
+  shell: . ~/overcloudrc ; openstack endpoint create placement admin http://{{placement_binding_addr.stdout}}:8778/placement --region regionOne
+
+- name: openstack-nova - create placement internal endpoint from undercloud
+  shell: . ~/overcloudrc ; openstack endpoint create placement internal http://{{placement_binding_addr.stdout}}:8778/placement --region regionOne
 
 - name: openstack-nova - stop httpd
   systemd:

@@ -19,32 +19,36 @@
 - include: ../../../common/tasks/keystone-db-sync.yml
 - include: ../../../common/tasks/cinder-db-sync.yml
 - include: ../../../common/tasks/neutron-db-sync.yml
-- include: ../../../common/tasks/sahara-db-sync.yml
+#- include: ../../../common/tasks/sahara-db-sync.yml
 - include: ../../../common/tasks/heat-db-sync.yml
-- include: ../../../common/tasks/nova-db-sync.yml
+- include: ../../../common/tasks/glance-db-sync.yml
 
 # FIXME: RHBZ#
 #- name: openstack-ceilometer - db sync
 #  command: ceilometer-upgrade --skip-metering-database
 
-#- name: openstack-swift - install python-zaqarclient
-#  yum:
-#    name: python-zaqarclient
-#    state: latest
+- name: openstack-swift - install python-zaqarclient
+  yum:
+    name: python-zaqarclient
+    state: latest
 
-#- include: nova-cellsv2.yml
-#- include: ../../../common/tasks/nova-db-sync.yml
+- include: nova-cellsv2.yml
+- include: ../../../common/tasks/nova-db-sync.yml
 
-#- include: nova-placement.yml
+- include: nova-placement.yml
 
-#- name: openstack-nova - update host_manager
-#  ini_file:
-#    path: /etc/nova/nova.conf
-#    section: DEFAULT
-#    option: scheduler_host_manager
-#    value: host_manager
-#    owner: nova
-#    group: nova
+- name: openstack-nova - update host_manager
+  ini_file:
+    path: /etc/nova/nova.conf
+    section: DEFAULT
+    option: scheduler_host_manager
+    value: host_manager
+    owner: nova
+    group: nova
 
-#- name: openstack-cinder - recreate /dev/loop2?!!
-#  command: losetup /dev/loop2 /var/lib/cinder/cinder-volumes
+- name: openstack-cinder - recreate /dev/loop2
+  command: losetup /dev/loop2 /var/lib/cinder/cinder-volumes
+  ignore_errors: true
+
+- name: openstack-cinder - find loop device
+  command: losetup -f /var/lib/cinder/cinder-volumes
