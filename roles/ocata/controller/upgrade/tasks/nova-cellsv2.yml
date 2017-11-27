@@ -18,7 +18,7 @@
 - name: openstack-nova - create transport_url
   no_log: true
   set_fact:
-    transport_url: "rabbit://{% for host in rabbit_hosts.stdout.split(',') %}{{rabbit_userid.stdout}}:{{rabbit_password.stdout}}@{{host}}{{ '' if loop.last else ',' }}{% endfor %}{{rabbit_virtual_host.stdout|default('\')}}"
+    transport_url: "rabbit://{% for host in rabbit_hosts.stdout.split(',') %}{{rabbit_userid.stdout}}:{{rabbit_password.stdout}}@{{host}}{{ '' if loop.last else ',' }}{% endfor %}{{rabbit_virtual_host.stdout|default('/')}}"
 
 - name: openstack-nova - Set transport_url
   ini_file:
