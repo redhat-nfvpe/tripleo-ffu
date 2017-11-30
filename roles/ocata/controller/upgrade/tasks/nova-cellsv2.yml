@@ -14,6 +14,7 @@
 - name: openstack-nova - Fetch rabbit_virtual_host
   command: crudini --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_virtual_host
   register: rabbit_virtual_host
+  ignore_errors: true
 
 - name: openstack-nova - create transport_url
   no_log: true
