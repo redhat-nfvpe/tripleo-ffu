@@ -1,0 +1,17 @@
+- name: tripleo repo
+  include_role:
+    name: common
+    tasks_from: tripleo-release
+  vars:
+    release_version: master
+
+- name: Update packages
+  yum:
+    name: '*'
+    state: latest
+
+- name: restart OpenStack compute services on {{ inventory_hostname }}.
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  with_items: "{{ compute_openstack_services }}"

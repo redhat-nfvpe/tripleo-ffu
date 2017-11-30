@@ -1,13 +1,11 @@
-- name: rhos-release
+- name: tripleo repo
   include_role:
     name: common
-    tasks_from: rhos-release
+    tasks_from: tripleo-release
   vars:
-    rhos_release_osp: 11
-    rhos_release_rhel: 7.4
-    rhos_release_puddle: 7.4-testing
+    release_version: master
 
-- name: Upgrade to OSP 11
+- name: Update packages
   yum:
     name: '*'
     state: latest
