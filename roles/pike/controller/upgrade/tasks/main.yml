@@ -21,6 +21,7 @@
 - include: ../../../common/tasks/neutron-db-sync.yml
 - include: ../../../common/tasks/sahara-db-sync.yml
 - include: ../../../common/tasks/heat-db-sync.yml
+- include: ../../../common/tasks/glance-db-sync.yml
 - include: ../../../common/tasks/nova-db-sync.yml
 
 # FIXME: RHBZ#

@@ -1,2 +1,2 @@
 - name: openstack-glance - db sync
-  command: glance-manage --config-file=/etc/glance/glance-registry.conf db_sync
+  command: glance-manage db_sync
